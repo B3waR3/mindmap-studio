@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" width="80" height="80">
+  <rect width="80" height="80" rx="16" fill="#5c35cc"/>
+  <!-- Root node -->
+  <rect x="28" y="33" width="24" height="14" rx="4" fill="white" opacity=".95"/>
+  <!-- Left branch -->
+  <path d="M28 37 Q18 37 18 25" stroke="#aed6f1" stroke-width="2.5" fill="none"/>
+  <rect x="8" y="19" width="20" height="12" rx="3" fill="#aed6f1"/>
+  <!-- Right branches -->
+  <path d="M52 37 Q62 37 62 25" stroke="#a9dfbf" stroke-width="2.5" fill="none"/>
+  <rect x="52" y="19" width="20" height="12" rx="3" fill="#a9dfbf"/>
+  <path d="M52 42 Q62 42 62 55" stroke="#f9e79f" stroke-width="2.5" fill="none"/>
+  <rect x="52" y="49" width="20" height="12" rx="3" fill="#f9e79f"/>
+</svg>

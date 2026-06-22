@@ -1,0 +1,19 @@
+{
+  "name": "onenote-mindmap-addin",
+  "version": "1.0.0",
+  "description": "Mind Map builder add-in for Microsoft OneNote",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "install-certs": "office-addin-dev-certs install",
+    "uninstall-certs": "office-addin-dev-certs uninstall"
+  },
+  "keywords": ["onenote", "mind-map", "office-addin"],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "devDependencies": {
+    "office-addin-dev-certs": "^1.8.0"
+  }
+}

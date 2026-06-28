@@ -413,24 +413,40 @@ class MindMap {
     const strokeW = isSelected ? 3 : 2;
 
     // Shape
+    const fill   = node.color || '#4a90d9';
+    const shadow = 'url(#node-shadow)';
+    const baseAttrs = { fill, stroke, 'stroke-width': strokeW, filter: shadow };
+
     if (node.shape === 'ellipse') {
-      const el = this._el('ellipse', {
-        cx: 0, cy: 0, rx: hw, ry: hh,
-        fill: node.color || '#4a90d9',
-        stroke, 'stroke-width': strokeW,
-        filter: 'url(#node-shadow)'
-      });
-      g.appendChild(el);
+      g.appendChild(this._el('ellipse', { cx: 0, cy: 0, rx: hw, ry: hh, ...baseAttrs }));
+
+    } else if (node.shape === 'rect-sharp') {
+      g.appendChild(this._el('rect', { x: -hw, y: -hh, width: node.w, height: node.h, rx: 2, ...baseAttrs }));
+
+    } else if (node.shape === 'diamond') {
+      // Expand bounding box so text fits inside the diamond
+      const dw = hw * 1.4, dh = hh * 1.5;
+      node._shapeW = dw; node._shapeH = dh;
+      const pts = `0,${-dh} ${dw},0 0,${dh} ${-dw},0`;
+      g.appendChild(this._el('polygon', { points: pts, ...baseAttrs }));
+
+    } else if (node.shape === 'hexagon') {
+      // Flat-top hexagon
+      const r2 = hw + 10;
+      const pts = [
+        [r2 * 0.5, -hh], [r2, 0], [r2 * 0.5, hh],
+        [-r2 * 0.5, hh], [-r2, 0], [-r2 * 0.5, -hh]
+      ].map(p => p.join(',')).join(' ');
+      g.appendChild(this._el('polygon', { points: pts, ...baseAttrs }));
+
+    } else if (node.shape === 'parallelogram') {
+      const sk = hh * 0.5; // skew offset
+      const pts = `${-hw + sk},${-hh} ${hw + sk},${-hh} ${hw - sk},${hh} ${-hw - sk},${hh}`;
+      g.appendChild(this._el('polygon', { points: pts, ...baseAttrs }));
+
     } else {
       // Default: rounded rectangle
-      const r = this._el('rect', {
-        x: -hw, y: -hh, width: node.w, height: node.h,
-        rx: node.shape === 'rect-sharp' ? 2 : 8,
-        fill: node.color || '#4a90d9',
-        stroke, 'stroke-width': strokeW,
-        filter: 'url(#node-shadow)'
-      });
-      g.appendChild(r);
+      g.appendChild(this._el('rect', { x: -hw, y: -hh, width: node.w, height: node.h, rx: 8, ...baseAttrs }));
     }
 
     // Text

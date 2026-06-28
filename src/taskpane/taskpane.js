@@ -698,31 +698,87 @@ function loadFromFile(e) {
 ══════════════════════════════════════ */
 
 async function insertIntoOneNote() {
-  if (!officeReady) {
+  if (!officeReady || typeof OneNote === 'undefined') {
     showToast('⚠️ Not running inside OneNote');
     return;
   }
+  if (!mindMap.rootId) {
+    showToast('⚠️ Nothing to insert — build a mind map first');
+    return;
+  }
+
+  showToast('⏳ Preparing image…');
+
   try {
-    // Convert SVG to a data-URL image and insert
-    const svgEl   = document.getElementById('mindmap-svg');
-    const svgData = new XMLSerializer().serializeToString(svgEl);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const url     = URL.createObjectURL(svgBlob);
+    const pngDataUrl = await exportMapToPng();
 
     await OneNote.run(async (context) => {
-      const page      = context.application.getActivePage();
-      const pageContent = page.contents.add();
-      pageContent.type = OneNote.PageContentType.image;
-      pageContent.image.dataUrl = url;
+      const page = context.application.getActivePage();
+      // addOutline(left, top, html) — inserts HTML content at position on page
+      page.addOutline(20, 120, `<img src="${pngDataUrl}" />`);
       await context.sync();
     });
 
-    URL.revokeObjectURL(url);
-    showToast('✅ Mind map inserted into OneNote page!');
+    showToast('✅ Mind map added to the OneNote page!');
   } catch (err) {
     console.error('Insert error:', err);
     showToast('❌ Could not insert: ' + (err.message || err));
   }
+}
+
+/** Render the mind map SVG to a 2× resolution PNG and return a base64 data URL. */
+function exportMapToPng() {
+  return new Promise((resolve, reject) => {
+    const nodes = Object.values(mindMap.nodes);
+    if (!nodes.length) { reject(new Error('No nodes')); return; }
+
+    // Compute tight bounding box around all node shapes
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    nodes.forEach(n => {
+      minX = Math.min(minX, n.x - n.w / 2);
+      minY = Math.min(minY, n.y - n.h / 2);
+      maxX = Math.max(maxX, n.x + n.w / 2);
+      maxY = Math.max(maxY, n.y + n.h / 2);
+    });
+
+    const pad  = 40;
+    const vbX  = minX - pad,  vbY = minY - pad;
+    const vbW  = maxX - minX + pad * 2;
+    const vbH  = maxY - minY + pad * 2;
+    const scale = 2; // retina / crisp export
+
+    // Clone the SVG and set a fixed viewBox for export
+    const svgEl = document.getElementById('mindmap-svg');
+    const clone = svgEl.cloneNode(true);
+    clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    clone.setAttribute('width',   vbW * scale);
+    clone.setAttribute('height',  vbH * scale);
+    clone.setAttribute('viewBox', `${vbX} ${vbY} ${vbW} ${vbH}`);
+
+    // Reset canvas pan/zoom transform — the viewBox handles framing
+    const mainG = clone.querySelector('#mm-main');
+    if (mainG) mainG.setAttribute('transform', 'scale(1)');
+
+    // Fill background
+    const bg = clone.querySelector('.mm-bg');
+    if (bg) { bg.setAttribute('width', '100%'); bg.setAttribute('height', '100%'); }
+
+    const svgStr  = new XMLSerializer().serializeToString(clone);
+    const svgB64  = btoa(unescape(encodeURIComponent(svgStr)));
+    const imgSrc  = 'data:image/svg+xml;base64,' + svgB64;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width  = vbW * scale;
+      canvas.height = vbH * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      resolve(canvas.toDataURL('image/png'));
+    };
+    img.onerror = () => reject(new Error('SVG → canvas render failed'));
+    img.src = imgSrc;
+  });
 }
 
 /* ══════════════════════════════════════

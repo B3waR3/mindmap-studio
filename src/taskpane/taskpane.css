@@ -60,10 +60,14 @@ html, body {
   padding: 2px 6px;
   flex-wrap: nowrap;
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   min-height: 36px;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
 }
 .tb-row::-webkit-scrollbar { display: none; }
+.tb-row > * { flex-shrink: 0; }
 .tb-row2 {
   border-top: 1px solid var(--border);
   background: #fafbfe;

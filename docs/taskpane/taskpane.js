@@ -55,6 +55,24 @@ function initApp() {
 
   // Enable horizontal drag-scroll on both toolbar rows
   document.querySelectorAll('.tb-row').forEach(enableHorizontalScroll);
+
+  // Arrow buttons for toolbar rows
+  const tbRows = document.querySelectorAll('.tb-row');
+  document.querySelectorAll('.tb-arrow').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = tbRows[parseInt(btn.dataset.row)];
+      if (row) row.scrollLeft += parseInt(btn.dataset.dir) * 120;
+    });
+    // Hold to keep scrolling
+    let held;
+    btn.addEventListener('mousedown', () => {
+      held = setInterval(() => {
+        const row = tbRows[parseInt(btn.dataset.row)];
+        if (row) row.scrollLeft += parseInt(btn.dataset.dir) * 40;
+      }, 80);
+    });
+    window.addEventListener('mouseup', () => clearInterval(held));
+  });
 }
 
 // Office.js bootstrap — falls back gracefully if not in Office

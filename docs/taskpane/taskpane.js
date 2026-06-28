@@ -52,6 +52,9 @@ function initApp() {
 
   updateEmptyState();
   centerMapOnResize();
+
+  // Enable horizontal drag-scroll on both toolbar rows
+  document.querySelectorAll('.tb-row').forEach(enableHorizontalScroll);
 }
 
 // Office.js bootstrap — falls back gracefully if not in Office
@@ -864,8 +867,44 @@ async function navigateToOneNoteLink(link) {
 function centerMapOnResize() {
   window.addEventListener('resize', debounce(() => {
     if (mindMap && !mindMap.rootId) return;
-    // Re-center only if map is empty or far off-screen; otherwise leave it
   }, 400));
+}
+
+/** Make an element horizontally scrollable via mouse drag and scroll wheel. */
+function enableHorizontalScroll(el) {
+  if (!el) return;
+  let down = false, startX = 0, scrollLeft = 0;
+
+  el.addEventListener('mousedown', (e) => {
+    down = true;
+    startX = e.pageX - el.getBoundingClientRect().left;
+    scrollLeft = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mouseup',   () => { down = false; el.style.cursor = ''; });
+  window.addEventListener('mousemove', (e) => {
+    if (!down) return;
+    const x = e.pageX - el.getBoundingClientRect().left;
+    el.scrollLeft = scrollLeft - (x - startX);
+  });
+
+  // Mouse wheel scrolls horizontally
+  el.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    el.scrollLeft += e.deltaY || e.deltaX;
+  }, { passive: false });
+
+  // Touch scroll
+  let touchStartX = 0, touchScrollLeft = 0;
+  el.addEventListener('touchstart', (e) => {
+    touchStartX    = e.touches[0].clientX;
+    touchScrollLeft = el.scrollLeft;
+  }, { passive: true });
+  el.addEventListener('touchmove', (e) => {
+    const dx = touchStartX - e.touches[0].clientX;
+    el.scrollLeft = touchScrollLeft + dx;
+  }, { passive: true });
 }
 
 /* ══════════════════════════════════════

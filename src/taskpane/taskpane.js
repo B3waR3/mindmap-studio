@@ -76,7 +76,25 @@ function initApp() {
 }
 
 // Office.js bootstrap — falls back gracefully if not in Office
-if (typeof Office !== 'undefined' && Office.onReady) {
+// Detect WebView2 COM add-in mode (no Office.js context available)
+const IS_WEBVIEW2 = !!(window.chrome && window.chrome.webview);
+
+if (IS_WEBVIEW2) {
+  // Running inside our C# COM add-in — init immediately
+  document.addEventListener('DOMContentLoaded', () => {
+    officeReady = false; // Office.js not available
+    initApp();
+
+    // Listen for acknowledgements from the C# host
+    window.chrome.webview.addEventListener('message', (e) => {
+      try {
+        const msg = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
+        if (msg.type === 'insertOk')    showToast('✅ Mind map added to the OneNote page!');
+        if (msg.type === 'insertError') showToast('❌ Could not insert into OneNote');
+      } catch (_) {}
+    });
+  });
+} else if (typeof Office !== 'undefined' && Office.onReady) {
   Office.onReady((info) => {
     officeReady = true;
     initApp();
@@ -719,10 +737,6 @@ function loadFromFile(e) {
 ══════════════════════════════════════ */
 
 async function insertIntoOneNote() {
-  if (!officeReady || typeof OneNote === 'undefined') {
-    showToast('⚠️ Not running inside OneNote');
-    return;
-  }
   if (!mindMap.rootId) {
     showToast('⚠️ Nothing to insert — build a mind map first');
     return;
@@ -733,9 +747,20 @@ async function insertIntoOneNote() {
   try {
     const pngDataUrl = await exportMapToPng();
 
+    if (IS_WEBVIEW2) {
+      // Running in the C# COM add-in — send to host for insertion via OneNote COM API
+      window.chrome.webview.postMessage(JSON.stringify({ type: 'insert', data: pngDataUrl }));
+      showToast('⏳ Sending to OneNote…');
+      return;
+    }
+
+    if (!officeReady || typeof OneNote === 'undefined') {
+      showToast('⚠️ Not running inside OneNote');
+      return;
+    }
+
     await OneNote.run(async (context) => {
       const page = context.application.getActivePage();
-      // addOutline(left, top, html) — inserts HTML content at position on page
       page.addOutline(20, 120, `<img src="${pngDataUrl}" />`);
       await context.sync();
     });

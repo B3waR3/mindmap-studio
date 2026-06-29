@@ -1,0 +1,41 @@
+<Window x:Class="MindMapStudio.MindMapWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wv2="clr-namespace:Microsoft.Web.WebView2.Wpf;assembly=Microsoft.Web.WebView2.Wpf"
+        Title="Mind Map Studio"
+        Width="480"
+        Height="750"
+        MinWidth="360"
+        MinHeight="500"
+        ShowInTaskbar="True"
+        ResizeMode="CanResize"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
+
+    <Grid>
+        <wv2:WebView2 x:Name="webView" />
+
+        <!-- Loading overlay shown until WebView2 is ready -->
+        <Border x:Name="loadingOverlay"
+                Background="#F3F0FF"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Stretch">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                <TextBlock Text="🗺️"
+                           FontSize="48"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,12" />
+                <TextBlock Text="Mind Map Studio"
+                           FontSize="18"
+                           FontWeight="SemiBold"
+                           Foreground="#5c35cc"
+                           HorizontalAlignment="Center"
+                           Margin="0,0,0,8" />
+                <TextBlock Text="Loading…"
+                           FontSize="13"
+                           Foreground="#888"
+                           HorizontalAlignment="Center" />
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

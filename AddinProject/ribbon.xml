@@ -1,0 +1,17 @@
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui">
+  <ribbon>
+    <tabs>
+      <tab id="MindMapStudioTab" label="Mind Map">
+        <group id="MindMapStudioGroup" label="Mind Map Studio">
+          <button id="btnOpenMindMap"
+                  label="Mind Map Studio"
+                  screentip="Open Mind Map Studio"
+                  supertip="Create and edit mind maps, then insert them into your OneNote page."
+                  imageMso="DiagramInsert"
+                  size="large"
+                  onAction="OpenMindMapCallback" />
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+</customUI>

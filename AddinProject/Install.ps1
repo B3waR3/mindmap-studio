@@ -30,23 +30,25 @@ $regKeyPath  = "HKCU:\Software\Microsoft\Office\OneNote\AddIns\$addinProgId"
 Write-Host ""
 Write-Host "Checking prerequisites..." -ForegroundColor White
 
-$dotnetCmd = Get-Command dotnet -ErrorAction SilentlyContinue
-if (-not $dotnetCmd) {
+# Check that the .NET SDK (not just the runtime) is installed
+$sdkList = ""
+try { $sdkList = & dotnet --list-sdks 2>&1 } catch { $sdkList = "" }
+
+if (-not $sdkList -or $sdkList -match "No .NET SDKs") {
     Write-Host ""
-    Write-Host "[ERROR] .NET SDK is not installed." -ForegroundColor Red
+    Write-Host "[ERROR] .NET SDK is not installed (only the Runtime was found)." -ForegroundColor Red
     Write-Host ""
-    Write-Host "Please install it from:" -ForegroundColor Yellow
-    Write-Host "  https://dotnet.microsoft.com/download" -ForegroundColor Cyan
+    Write-Host "  You need the SDK (which includes build tools)." -ForegroundColor Yellow
+    Write-Host "  Download the .NET 8 SDK installer (Windows x64) from:" -ForegroundColor Yellow
     Write-Host ""
-    Write-Host "Download '.NET SDK 8' (Windows x64 Installer), install it," -ForegroundColor Yellow
-    Write-Host "then run this script again." -ForegroundColor Yellow
+    Write-Host "    https://dotnet.microsoft.com/en-us/download/dotnet/8.0" -ForegroundColor Cyan
+    Write-Host ""
+    Write-Host "  After installing, run Install.bat again." -ForegroundColor Yellow
     Pause-Script
     exit 1
 }
 
-$dotnetVer = ""
-try { $dotnetVer = & dotnet --version 2>&1 } catch { $dotnetVer = "unknown" }
-Write-Host "  [OK] .NET SDK $dotnetVer" -ForegroundColor Green
+Write-Host "  [OK] .NET SDK found" -ForegroundColor Green
 
 # ── Check: RegAsm (.NET Framework 4.8) ────────────────────────────────────────
 if (-not (Test-Path $regAsm)) {

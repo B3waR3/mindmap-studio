@@ -98,15 +98,15 @@ if (Test-Path $wv2Loader) {
 
 Write-Host "  [OK] Files copied." -ForegroundColor Green
 
-# ── Step 3: Register COM per-user (HKCU — no admin needed) ────────────────────
+# ── Step 3: Register COM system-wide (HKLM — requires admin) ──────────────────
 Write-Host ""
-Write-Host "[3/4] Registering COM component (per-user)..." -ForegroundColor Cyan
+Write-Host "[3/4] Registering COM component (system-wide)..." -ForegroundColor Cyan
 
 $dllUri   = "file:///" + $dllInstalled.Replace("\", "/")
 $assembly = "MindMapStudio, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"
 
-# HKCU\Software\Classes\CLSID\{guid}\InprocServer32
-$clsidBase  = "HKCU:\Software\Classes\CLSID\{$clsidGuid}"
+# HKLM\Software\Classes\CLSID\{guid}\InprocServer32
+$clsidBase  = "HKLM:\Software\Classes\CLSID\{$clsidGuid}"
 $inprocPath = "$clsidBase\InprocServer32"
 New-Item -Path $inprocPath -Force | Out-Null
 Set-ItemProperty -Path $inprocPath -Name "(Default)"       -Value "mscoree.dll"
@@ -120,13 +120,23 @@ Set-ItemProperty -Path $inprocPath -Name "CodeBase"        -Value $dllUri
 New-Item -Path "$clsidBase\ProgId" -Force | Out-Null
 Set-ItemProperty -Path "$clsidBase\ProgId" -Name "(Default)" -Value $progId
 
-# HKCU\Software\Classes\<ProgId>\CLSID
-$progIdBase = "HKCU:\Software\Classes\$progId"
+# HKLM\Software\Classes\<ProgId>\CLSID
+$progIdBase = "HKLM:\Software\Classes\$progId"
 New-Item -Path "$progIdBase\CLSID" -Force | Out-Null
 Set-ItemProperty -Path $progIdBase          -Name "(Default)" -Value "Mind Map Studio"
 Set-ItemProperty -Path "$progIdBase\CLSID"  -Name "(Default)" -Value "{$clsidGuid}"
 
-Write-Host "  [OK] COM registered (per-user)." -ForegroundColor Green
+# Also keep HKCU registration as fallback
+$hkcuClsid = "HKCU:\Software\Classes\CLSID\{$clsidGuid}\InprocServer32"
+New-Item -Path $hkcuClsid -Force | Out-Null
+Set-ItemProperty -Path $hkcuClsid -Name "(Default)"      -Value "mscoree.dll"
+Set-ItemProperty -Path $hkcuClsid -Name "Class"          -Value "MindMapStudio.Connect"
+Set-ItemProperty -Path $hkcuClsid -Name "Assembly"       -Value $assembly
+Set-ItemProperty -Path $hkcuClsid -Name "RuntimeVersion" -Value "v4.0.30319"
+Set-ItemProperty -Path $hkcuClsid -Name "ThreadingModel" -Value "Both"
+Set-ItemProperty -Path $hkcuClsid -Name "CodeBase"       -Value $dllUri
+
+Write-Host "  [OK] COM registered (system-wide + per-user)." -ForegroundColor Green
 
 # ── Step 4: Write OneNote add-in registry keys ────────────────────────────────
 Write-Host ""

@@ -1,0 +1,5 @@
+is_global = true
+build_property.RootNamespace = MindMapStudio
+build_property.ProjectDir = C:\Visual Studio Code Projects\OneNoteExtension\AddinProject\
+build_property.EnableComHosting = 
+build_property.EnableGeneratedComInterfaceComImportInterop = 

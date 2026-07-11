@@ -11,7 +11,7 @@
     <ComVisible>true</ComVisible>
     <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
     <Nullable>disable</Nullable>
-    <PlatformTarget>x64</PlatformTarget>
+    <PlatformTarget>AnyCPU</PlatformTarget>
     <LangVersion>8.0</LangVersion>
   </PropertyGroup>
 

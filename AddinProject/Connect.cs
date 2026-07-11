@@ -66,7 +66,10 @@ namespace MindMapStudio
         ext_dm_UserClosed   = 1
     }
 
-    [ComImport]
+    // Note: [ComImport] is intentionally NOT used on these interfaces.
+    // [ComImport] means "import from COM", but here we are IMPLEMENTING the interfaces
+    // in .NET and exposing them TO COM via the CCW. [ComImport] would confuse the CCW.
+
     [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     [Guid("B65AD801-ABAF-11D0-BB8B-00A0C90F2744")]
     public interface IDTExtensibility2
@@ -83,7 +86,6 @@ namespace MindMapStudio
         void OnBeginShutdown(ref Array custom);
     }
 
-    [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
     [Guid("000C0396-0000-0000-C000-000000000046")]
     public interface IRibbonExtensibility
@@ -92,6 +94,7 @@ namespace MindMapStudio
         string GetCustomUI([MarshalAs(UnmanagedType.BStr)] string RibbonID);
     }
 
+    // IRibbonControl IS a COM object passed to us, so [ComImport] is correct here.
     [ComImport]
     [InterfaceType(ComInterfaceType.InterfaceIsIDispatch)]
     [Guid("000C0395-0000-0000-C000-000000000046")]

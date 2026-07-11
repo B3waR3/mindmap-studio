@@ -5,6 +5,51 @@ using System.Runtime.InteropServices;
 
 namespace MindMapStudio
 {
+    /// <summary>
+    /// Static bootstrapper — runs before ANY instance code.
+    /// Redirects .NET assembly resolution to the DLL's own folder so that
+    /// System.Text.Json, WebView2, etc. are found even though COM loads us
+    /// from OneNote's working directory.
+    /// </summary>
+    internal static class Bootstrapper
+    {
+        private static readonly string DllDir =
+            Path.GetDirectoryName(typeof(Bootstrapper).Assembly.Location);
+
+        private static readonly string LogFile =
+            Path.Combine(DllDir, "startup.log");
+
+        static Bootstrapper()
+        {
+            AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
+            Log("Bootstrapper initialised. DllDir=" + DllDir);
+        }
+
+        internal static void Init() { /* calling this ensures the static ctor fires */ }
+
+        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
+        {
+            string name = new AssemblyName(args.Name).Name;
+            string path = Path.Combine(DllDir, name + ".dll");
+            if (File.Exists(path))
+            {
+                Log("Resolved: " + name);
+                return Assembly.LoadFrom(path);
+            }
+            return null;
+        }
+
+        internal static void Log(string msg)
+        {
+            try
+            {
+                File.AppendAllText(LogFile,
+                    DateTime.Now.ToString("HH:mm:ss.fff") + " " + msg + "\r\n");
+            }
+            catch { }
+        }
+    }
+
     // ── COM interfaces defined manually (no PIA required) ──────────────────────
 
     public enum ext_ConnectMode
@@ -75,6 +120,8 @@ namespace MindMapStudio
             object AddInInst,
             ref Array custom)
         {
+            Bootstrapper.Init(); // must be first — sets up assembly resolution
+            Bootstrapper.Log("OnConnection called. ConnectMode=" + ConnectMode);
             OneNoteApp = Application;
         }
 
@@ -92,27 +139,49 @@ namespace MindMapStudio
         // Returns ribbon XML definition (embedded resource)
         public string GetCustomUI(string RibbonID)
         {
-            var asm = Assembly.GetExecutingAssembly();
-            using (var stream = asm.GetManifestResourceStream("MindMapStudio.ribbon.xml"))
-            using (var reader = new StreamReader(stream))
+            try
             {
-                return reader.ReadToEnd();
+                Bootstrapper.Log("GetCustomUI called for: " + RibbonID);
+                var asm = Assembly.GetExecutingAssembly();
+                using (var stream = asm.GetManifestResourceStream("MindMapStudio.ribbon.xml"))
+                using (var reader = new StreamReader(stream))
+                {
+                    var xml = reader.ReadToEnd();
+                    Bootstrapper.Log("GetCustomUI returning " + xml.Length + " chars");
+                    return xml;
+                }
+            }
+            catch (Exception ex)
+            {
+                Bootstrapper.Log("GetCustomUI ERROR: " + ex);
+                return "<customUI xmlns=\"http://schemas.microsoft.com/office/2009/07/customui\" />";
             }
         }
 
         // Called when the ribbon button is clicked
         public void OpenMindMapCallback(IRibbonControl control)
         {
-            if (_window == null || !_window.IsLoaded)
+            try
             {
-                _window = new MindMapWindow(this);
-                _window.Show();
-            }
-            else
-            {
-                _window.Activate();
-                if (!_window.IsVisible)
+                Bootstrapper.Log("OpenMindMapCallback clicked");
+                if (_window == null || !_window.IsLoaded)
+                {
+                    _window = new MindMapWindow(this);
                     _window.Show();
+                }
+                else
+                {
+                    _window.Activate();
+                    if (!_window.IsVisible)
+                        _window.Show();
+                }
+            }
+            catch (Exception ex)
+            {
+                Bootstrapper.Log("OpenMindMapCallback ERROR: " + ex);
+                System.Windows.MessageBox.Show(
+                    "Error opening Mind Map Studio:\n" + ex.Message,
+                    "Mind Map Studio");
             }
         }
     }

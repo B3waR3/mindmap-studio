@@ -13,31 +13,36 @@ namespace MindMapStudio
     /// </summary>
     internal static class Bootstrapper
     {
-        private static readonly string DllDir =
-            Path.GetDirectoryName(typeof(Bootstrapper).Assembly.Location);
+        // Safe directory resolution — Assembly.Location can be empty under COM activation
+        private static readonly string InstallDir = GetInstallDir();
+        private static readonly string LogFile    = Path.Combine(InstallDir, "startup.log");
 
-        private static readonly string LogFile =
-            Path.Combine(DllDir, "startup.log");
+        private static string GetInstallDir()
+        {
+            try
+            {
+                string loc = typeof(Bootstrapper).Assembly.Location;
+                if (!string.IsNullOrEmpty(loc))
+                {
+                    string dir = Path.GetDirectoryName(loc);
+                    if (!string.IsNullOrEmpty(dir)) return dir;
+                }
+            }
+            catch { }
+            // Fallback: well-known install path
+            return Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                "MindMapStudio");
+        }
 
         static Bootstrapper()
         {
-            AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
-            Log("Bootstrapper initialised. DllDir=" + DllDir);
+            // Costura.Fody handles assembly resolution for embedded deps.
+            // We just log startup here.
+            Log("Bootstrapper init. InstallDir=" + InstallDir);
         }
 
-        internal static void Init() { /* calling this ensures the static ctor fires */ }
-
-        private static Assembly ResolveAssembly(object sender, ResolveEventArgs args)
-        {
-            string name = new AssemblyName(args.Name).Name;
-            string path = Path.Combine(DllDir, name + ".dll");
-            if (File.Exists(path))
-            {
-                Log("Resolved: " + name);
-                return Assembly.LoadFrom(path);
-            }
-            return null;
-        }
+        internal static void Init() { /* ensures static ctor fires */ }
 
         internal static void Log(string msg)
         {
